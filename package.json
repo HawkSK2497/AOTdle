@@ -1,0 +1,44 @@
+{
+  "name": "aotdle",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "api": "tsx watch server/api/index.ts",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:scrape": "tsx scripts/ingest.ts",
+    "db:scrape:trial": "tsx scripts/ingest.ts --limit 10",
+    "db:audit": "tsx scripts/audit.ts",
+    "setup": "tsx scripts/setup.ts",
+    "start": "concurrently -n web,api -c cyan,magenta \"npm run dev\" \"npm run api\""
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "pg": "^8.22.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.13.2",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "concurrently": "^10.0.4",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "oxlint": "^1.71.0",
+    "tsx": "^4.23.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}

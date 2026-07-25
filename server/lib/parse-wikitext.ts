@@ -15,12 +15,12 @@
  * Reads a balanced block starting at `start`, e.g. `{{a|{{b}}}}`.
  * Returns the block text and the index just past its closing delimiter.
  */
-function readBalanced(
+const readBalanced = (
   text: string,
   start: number,
   open: string,
   close: string,
-): { text: string; end: number } | null {
+): { text: string; end: number } | null => {
   if (!text.startsWith(open, start)) return null;
   let depth = 0;
   let i = start;
@@ -37,10 +37,10 @@ function readBalanced(
     }
   }
   return null; // unbalanced
-}
+};
 
 /** Splits on `|` characters that are NOT inside a nested {{...}} or [[...]]. */
-function splitTopLevel(inner: string): string[] {
+const splitTopLevel = (inner: string): string[] => {
   const parts: string[] = [];
   let current = "";
   let tmpl = 0;
@@ -75,10 +75,10 @@ function splitTopLevel(inner: string): string[] {
   }
   parts.push(current);
   return parts;
-}
+};
 
 /** Finds every occurrence of a named template, returning the full blocks. */
-export function findTemplates(wikitext: string, name: string): string[] {
+export const findTemplates = (wikitext: string, name: string): string[] => {
   const re = new RegExp(`\\{\\{\\s*${name}\\b`, "gi");
   const found: string[] = [];
   let m: RegExpExecArray | null;
@@ -90,7 +90,7 @@ export function findTemplates(wikitext: string, name: string): string[] {
     }
   }
   return found;
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Template parameter parsing                                          */
@@ -102,17 +102,17 @@ export function findTemplates(wikitext: string, name: string): string[] {
  * by exact string silently loses data, so all lookups go through this, which
  * lowercases and collapses whitespace.
  */
-export function fieldGetter(fields: Record<string, string>) {
+export const fieldGetter = (fields: Record<string, string>) => {
   const normalised: Record<string, string> = {};
   for (const [key, value] of Object.entries(fields)) {
     normalised[key.toLowerCase().replace(/\s+/g, " ").trim()] = value;
   }
   return (name: string): string | undefined =>
     normalised[name.toLowerCase().replace(/\s+/g, " ").trim()];
-}
+};
 
 /** Turns a `{{Name|Key = Value|...}}` block into a key/value object. */
-export function templateToFields(block: string): Record<string, string> {
+export const templateToFields = (block: string): Record<string, string> => {
   const inner = block.slice(2, -2); // drop {{ and }}
   const params = splitTopLevel(inner).slice(1); // drop template name
   const fields: Record<string, string> = {};
@@ -125,7 +125,7 @@ export function templateToFields(block: string): Record<string, string> {
     if (key) fields[key] = value;
   }
   return fields;
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Value cleaning                                                      */
@@ -152,7 +152,7 @@ const FIRST_ARG_TEMPLATES = new Set([
 ]);
 
 /** Recursively strips wiki markup from a field value. */
-function unwrap(text: string): string {
+const unwrap = (text: string): string => {
   let out = "";
   let i = 0;
 
@@ -194,10 +194,10 @@ function unwrap(text: string): string {
     out += text[i++];
   }
   return out;
-}
+};
 
 /** Full clean: unwrap templates/links, normalise breaks, strip formatting. */
-export function cleanValue(raw: string): string {
+export const cleanValue = (raw: string): string => {
   let text = unwrap(raw);
   text = text.replace(/<br\s*\/?>/gi, "\n"); // line breaks become newlines
   text = text.replace(/<[^>]+>/g, ""); // any other HTML
@@ -209,17 +209,17 @@ export function cleanValue(raw: string): string {
     .filter(Boolean)
     .join("\n");
   return text.trim();
-}
+};
 
 /** Cleans a value that represents multiple items, returning an array. */
-export function cleanList(raw: string): string[] {
+export const cleanList = (raw: string): string[] => {
   const cleaned = cleanValue(raw);
   if (!cleaned) return [];
   return cleaned
     .split(/\n|,(?![^(]*\))/) // newlines, or commas outside parentheses
     .map((s) => s.trim())
     .filter(Boolean);
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Field extraction                                                    */
@@ -228,12 +228,12 @@ export function cleanList(raw: string): string[] {
 const STATUSES = ["Alive", "Deceased", "Unknown"] as const;
 export type Status = (typeof STATUSES)[number];
 
-function normaliseStatus(raw?: string): Status {
+const normaliseStatus = (raw?: string): Status => {
   const value = cleanValue(raw ?? "").toLowerCase();
   if (value.startsWith("alive")) return "Alive";
   if (value.startsWith("deceased") || value.includes("dead")) return "Deceased";
   return "Unknown";
-}
+};
 
 /**
  * Height needs care: characters have multiple entries, including Titan forms.
@@ -241,7 +241,7 @@ function normaliseStatus(raw?: string): Status {
  * We want the first HUMAN measurement in cm, so we drop any line mentioning
  * a Titan form and take the first `N cm` we find.
  */
-function parseHeightCm(raw?: string): number | null {
+const parseHeightCm = (raw?: string): number | null => {
   if (!raw) return null;
   const lines = cleanValue(raw)
     .split("\n")
@@ -251,9 +251,9 @@ function parseHeightCm(raw?: string): number | null {
     if (m) return Math.round(parseFloat(m[1]));
   }
   return null;
-}
+};
 
-function parseWeightKg(raw?: string): number | null {
+const parseWeightKg = (raw?: string): number | null => {
   if (!raw) return null;
   const lines = cleanValue(raw)
     .split("\n")
@@ -263,24 +263,24 @@ function parseWeightKg(raw?: string): number | null {
     if (m) return Math.round(parseFloat(m[1]));
   }
   return null;
-}
+};
 
 /** "5th" -> 5 */
-function parseOrdinal(raw?: string): number | null {
+const parseOrdinal = (raw?: string): number | null => {
   if (!raw) return null;
   const m = cleanValue(raw).match(/(\d+)/);
   return m ? parseInt(m[1], 10) : null;
-}
+};
 
 /** Titan kill counts end with "Total: 23" once bold markers are stripped. */
-function parseTitanKills(raw?: string): number | null {
+const parseTitanKills = (raw?: string): number | null => {
   if (!raw) return null;
   const cleaned = cleanValue(raw);
   const total = cleaned.match(/total:?\s*(\d+)/i);
   if (total) return parseInt(total[1], 10);
   const solo = cleaned.match(/solo:?\s*(\d+)/i);
   return solo ? parseInt(solo[1], 10) : null;
-}
+};
 
 /**
  * Titan forms are NOT in the infobox — they live in {{Succession}} blocks
@@ -293,7 +293,7 @@ function parseTitanKills(raw?: string): number | null {
  * ("Nine Titans"). Some pages omit Group, so a title ending in "Titan" is
  * accepted as a fallback.
  */
-export function parseTitanForms(wikitext: string): string[] {
+export const parseTitanForms = (wikitext: string): string[] => {
   const forms = findTemplates(wikitext, "Succession")
     .map((block) => templateToFields(block))
     .map((fields) => {
@@ -310,7 +310,7 @@ export function parseTitanForms(wikitext: string): string[] {
     .map(({ title }) => title);
 
   return [...new Set(forms)];
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Public entry point                                                  */
@@ -364,13 +364,13 @@ const orNull = (raw?: string): string | null => {
  * A value of "#" means "this page is that version", so there is nothing extra
  * to fetch. An empty value means the character never appeared in that medium.
  */
-export function animePageTitle(wikitext: string): string | null {
+export const animePageTitle = (wikitext: string): string | null => {
   const block = findTemplates(wikitext, "Media icons")[0];
   if (!block) return null;
   const value = (fieldGetter(templateToFields(block))("a") ?? "").trim();
   if (!value || value === "#") return null;
   return cleanValue(value) || null;
-}
+};
 
 /**
  * Candidate key names for anime-only fields. The wiki is inconsistent, and I
@@ -399,16 +399,16 @@ const EPISODE_KEYS = [
 ];
 
 /** Returns the first non-empty value among several candidate key names. */
-function firstOf(
+const firstOf = (
   g: (name: string) => string | undefined,
   keys: string[],
-): string | null {
+): string | null => {
   for (const key of keys) {
     const value = orNull(g(key));
     if (value) return value;
   }
   return null;
-}
+};
 
 export interface ParsedAnimePage {
   voiceActorJp: string | null;
@@ -418,7 +418,7 @@ export interface ParsedAnimePage {
   unknownKeys: string[];
 }
 
-export function parseAnimePage(wikitext: string): ParsedAnimePage | null {
+export const parseAnimePage = (wikitext: string): ParsedAnimePage | null => {
   const block = findTemplates(wikitext, "Infobox character")[0];
   if (!block) return null;
 
@@ -434,7 +434,7 @@ export function parseAnimePage(wikitext: string): ParsedAnimePage | null {
       (k) => !consumed.has(k.toLowerCase().replace(/\s+/g, " ").trim()),
     ),
   };
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Sanity filter                                                       */
@@ -445,16 +445,16 @@ export function parseAnimePage(wikitext: string): ParsedAnimePage | null {
  * presence of the template is not enough. Real people have at least one of
  * these personal attributes; concepts have none of them.
  */
-export function looksLikePerson(c: ParsedCharacter): boolean {
+export const looksLikePerson = (c: ParsedCharacter): boolean => {
   return Boolean(
     c.gender || c.heightCm || c.birthday || c.occupation || c.formerOccupation,
   );
-}
+};
 
-export function parseCharacter(
+export const parseCharacter = (
   wikitext: string,
   meta: { pageId: number; title: string },
-): ParsedCharacter | null {
+): ParsedCharacter | null => {
   const infoboxBlock = findTemplates(wikitext, "Infobox character")[0];
   if (!infoboxBlock) return null; // not a character page
 
@@ -508,4 +508,4 @@ export function parseCharacter(
     isInAnime: animeEntry !== "" && animeEntry !== "#",
     rawInfobox: f,
   };
-}
+};

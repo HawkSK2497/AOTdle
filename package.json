@@ -11,10 +11,10 @@
     "api": "tsx watch server/api/index.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:scrape": "tsx scripts/ingest.ts",
-    "db:scrape:trial": "tsx scripts/ingest.ts --limit 10",
-    "db:audit": "tsx scripts/audit.ts",
-    "setup": "tsx scripts/setup.ts",
+    "db:scrape": "tsx server/scripts/ingest.ts",
+    "db:scrape:trial": "tsx server/scripts/ingest.ts --limit 10",
+    "db:audit": "tsx server/scripts/audit.ts",
+    "setup": "tsx server/scripts/setup.ts",
     "start": "concurrently -n web,api -c cyan,magenta \"npm run dev\" \"npm run api\""
   },
   "dependencies": {

@@ -1,10 +1,10 @@
 import { db, pool } from "../db";
 import { characters } from "../db/schema";
 
-async function main() {
+const main = async () => {
   await db.delete(characters);
   console.log("characters table emptied");
   await pool.end();
-}
+};
 
 main();

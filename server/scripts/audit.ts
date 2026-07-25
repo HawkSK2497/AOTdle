@@ -13,16 +13,16 @@ const BASE = "https://attackontitan.fandom.com/api.php";
 const HEADERS = { "User-Agent": "AOTGuessGame/1.0 (your-email@example.com)" };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function api(params: Record<string, string>): Promise<any> {
+const api = async (params: Record<string, string>): Promise<any> => {
   const url = new URL(BASE);
   url.search = new URLSearchParams({ format: "json", ...params }).toString();
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   await sleep(1000);
   return res.json();
-}
+};
 
-async function getAllCharacterTitles(): Promise<string[]> {
+const getAllCharacterTitles = async (): Promise<string[]> => {
   const titles: string[] = [];
   let cmcontinue: string | undefined;
   do {
@@ -38,9 +38,9 @@ async function getAllCharacterTitles(): Promise<string[]> {
     cmcontinue = data.continue?.cmcontinue;
   } while (cmcontinue);
   return titles;
-}
+};
 
-async function main() {
+const main = async () => {
   const wikiTitles = await getAllCharacterTitles();
 
   const rows = await db
@@ -124,7 +124,7 @@ async function main() {
   }
 
   await pool.end();
-}
+};
 
 main().catch(async (err) => {
   console.error(err);

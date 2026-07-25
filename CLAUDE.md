@@ -258,6 +258,8 @@ pagination or server-side search.
 - The empty server/ directories are deliberate scaffolding for later. Do not
   refactor server/api/index.ts into them as part of frontend work — the API
   is working and out of scope.
+- Use arrow function expressions, not the `function` keyword. Enforced by
+  `func-style` in `.oxlintrc.json` — `npm run lint` will fail otherwise.
 
 ---
 

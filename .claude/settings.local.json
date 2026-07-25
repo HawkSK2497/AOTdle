@@ -6,7 +6,12 @@
       "Bash(git mv *)",
       "Bash(mv server/scripts scripts)",
       "Bash(npx tsc *)",
-      "Bash(node --input-type=module -e ' *)"
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(grep -n \"^};\\\\?$\" server/lib/parse-wikitext.ts)",
+      "Bash(grep -n \"^}$\\\\|^};$\" server/scripts/test-parse.ts server/scripts/audit.ts server/scripts/ingest.ts server/scripts/reset-db.ts)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(curl -s http://localhost:3001/api/characters)"
     ]
   }
 }

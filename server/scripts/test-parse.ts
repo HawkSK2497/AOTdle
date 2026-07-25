@@ -36,7 +36,7 @@ const TEST_PAGES = [
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function fetchWikitext(title: string) {
+const fetchWikitext = async (title: string) => {
   const url = new URL(BASE);
   url.search = new URLSearchParams({
     action: "parse",
@@ -57,12 +57,12 @@ async function fetchWikitext(title: string) {
     title: data.parse.title as string,
     wikitext: data.parse.wikitext["*"] as string,
   };
-}
+};
 
 /** Fields that being null is a red flag for, per character. */
 const KEY_FIELDS = ["status", "heightCm", "affiliations", "formerAffiliations"];
 
-async function main() {
+const main = async () => {
   for (const page of TEST_PAGES) {
     console.log("\n" + "=".repeat(60));
     console.log(page);
@@ -165,7 +165,7 @@ async function main() {
   }
 
   console.log("\ndone");
-}
+};
 
 main().catch((err) => {
   console.error(err);

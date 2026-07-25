@@ -26,7 +26,7 @@ const DELAY_MS = 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Every API call goes through here so throttling is impossible to forget. */
-async function api(params: Record<string, string>): Promise<any> {
+const api = async (params: Record<string, string>): Promise<any> => {
   const url = new URL(BASE);
   url.search = new URLSearchParams({ format: "json", ...params }).toString();
 
@@ -35,13 +35,13 @@ async function api(params: Record<string, string>): Promise<any> {
 
   await sleep(DELAY_MS);
   return res.json();
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Step 1: list every character page                                   */
 /* ------------------------------------------------------------------ */
 
-async function getAllCharacterTitles(): Promise<string[]> {
+const getAllCharacterTitles = async (): Promise<string[]> => {
   const titles: string[] = [];
   let cmcontinue: string | undefined;
 
@@ -64,13 +64,13 @@ async function getAllCharacterTitles(): Promise<string[]> {
 
   process.stdout.write("\n");
   return titles;
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Step 2: fetch one page's wikitext                                   */
 /* ------------------------------------------------------------------ */
 
-async function fetchWikitext(title: string) {
+const fetchWikitext = async (title: string) => {
   const data = await api({
     action: "parse",
     page: title,
@@ -85,13 +85,13 @@ async function fetchWikitext(title: string) {
     title: data.parse.title as string,
     wikitext: data.parse.wikitext["*"] as string,
   };
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Step 3: images, batched 50 titles at a time                         */
 /* ------------------------------------------------------------------ */
 
-async function fetchImages(titles: string[]): Promise<Map<string, string>> {
+const fetchImages = async (titles: string[]): Promise<Map<string, string>> => {
   const images = new Map<string, string>();
 
   for (let i = 0; i < titles.length; i += 50) {
@@ -112,13 +112,13 @@ async function fetchImages(titles: string[]): Promise<Map<string, string>> {
   }
 
   return images;
-}
+};
 
 /* ------------------------------------------------------------------ */
 /* Main                                                                */
 /* ------------------------------------------------------------------ */
 
-async function main() {
+const main = async () => {
   const limitArg = process.argv.indexOf("--limit");
   const limit =
     limitArg !== -1 ? parseInt(process.argv[limitArg + 1], 10) : Infinity;
@@ -265,7 +265,7 @@ async function main() {
   }
 
   await pool.end();
-}
+};
 
 main().catch(async (err) => {
   console.error(err);

@@ -6,6 +6,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    proxy: { "/api": "https://localhost:3001" },
+    // The API speaks plain HTTP — an https target here fails every request.
+    proxy: { "/api": "http://localhost:3001" },
   },
 });

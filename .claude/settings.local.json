@@ -11,7 +11,18 @@
       "Bash(grep -n \"^}$\\\\|^};$\" server/scripts/test-parse.ts server/scripts/audit.ts server/scripts/ingest.ts server/scripts/reset-db.ts)",
       "Bash(npm run *)",
       "Bash(npm install *)",
-      "Bash(curl -s http://localhost:3001/api/characters)"
+      "Bash(curl -s http://localhost:3001/api/characters)",
+      "Bash(curl -s -m 3 http://localhost:3001/api/characters -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(curl -s -m 2 http://localhost:3001/api/characters -o /dev/null)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:3001/api/characters/1)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const o=JSON.parse\\(d\\);delete o.rawInfobox;console.log\\(JSON.stringify\\(o,null,1\\)\\)}\\)\")",
+      "Bash(echo \"APP EXIT: $?\")",
+      "Bash(curl -s -m 2 http://localhost:5173/ -o /dev/null)",
+      "Bash(curl -s -m 5 \"http://localhost:5173/api/characters\" -o /dev/null -w \"proxy status: %{http_code}\\\\n\")",
+      "Bash(curl -s -m 5 http://localhost:3001/api/characters -o /dev/null -w \"api: %{http_code} in %{time_total}s\\\\n\")",
+      "Bash(curl -s -m 5 http://localhost:5173/api/characters -o /dev/null -w \"proxy: %{http_code}\\\\n\")",
+      "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed $p\" } else { \"nothing listening\" })"
     ]
   }
 }

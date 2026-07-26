@@ -5,7 +5,17 @@
  *   npx tsx server/scripts/test-parse.ts
  */
 
-import { parseCharacter, findTemplates } from "../lib/parse-wikitext";
+import { parseCharacter } from "../lib/parse-wikitext";
+
+/** Only the slice of the MediaWiki parse response this script reads. */
+interface ParseResponse {
+  error?: unknown;
+  parse: {
+    pageid: number;
+    title: string;
+    wikitext: { "*": string };
+  };
+}
 
 const BASE = "https://attackontitan.fandom.com/api.php";
 const HEADERS = {
@@ -49,13 +59,13 @@ const fetchWikitext = async (title: string) => {
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${title}`);
 
-  const data = await res.json();
+  const data = (await res.json()) as ParseResponse;
   if (data.error) return null; // page does not exist
 
   return {
-    pageId: data.parse.pageid as number,
-    title: data.parse.title as string,
-    wikitext: data.parse.wikitext["*"] as string,
+    pageId: data.parse.pageid,
+    title: data.parse.title,
+    wikitext: data.parse.wikitext["*"],
   };
 };
 

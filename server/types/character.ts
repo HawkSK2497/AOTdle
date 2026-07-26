@@ -39,4 +39,7 @@ export interface CharacterDetail extends Character {
   gradRank: number | null;
   titanKillsTotal: number | null;
   debutChapter: string | null;
+  formerOccupation: string | null;
+  voiceActorEn: string | null;
+  isInAnime: boolean;
 }

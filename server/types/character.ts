@@ -10,6 +10,8 @@ export type CharacterStatus = "Alive" | "Deceased" | "Unknown";
 export interface Character {
   id: number;
   name: string;
+  /** Carried on the list payload so the drill can match guesses on them. */
+  aliases: string[] | null;
   imageUrl: string | null;
   status: CharacterStatus | null;
   species: string[] | null;
@@ -29,7 +31,6 @@ export interface CharacterDetail extends Character {
   wikiTitle: string;
   kanji: string | null;
   romaji: string | null;
-  aliases: string[] | null;
   weightKg: number | null;
   birthday: string | null;
   birthplace: string | null;

@@ -1,47 +1,52 @@
 # AOTdle
 
-A character database and (eventually) daily guessing game built on data scraped
-from the Attack on Titan wiki. The scraping pipeline and API are **done**. The
-frontend is what needs building.
+An Attack on Titan character archive and a Wordle-style character guessing
+game, sharing one database and one design system.
+
+The scraper, API, archive UI, and the guessing game are **built and working**.
 
 ---
 
 ## Repository layout
 
 ```
-scripts/            Node: one-off tasks (scraper, audit, setup)
+index.html            Vite entry. At the repo root, not in web/.
+vite.config.ts        Also at the root. Contains the /api proxy.
+drizzle.config.ts
 server/
-  api/index.ts      Express API, port 3001
+  api/index.ts        Express API, port 3001
   config/env.ts
-  controllers/      scaffolded, empty
+  controllers/game.ts Request and response for the drill
   db/
-    index.ts        Drizzle client + pg Pool
-    schema.ts       Single source of truth for data shape
+    index.ts          Drizzle client + pg Pool
+    schema.ts         Single source of truth for data shape
   lib/
-    parse-wikitext.ts   MediaWiki parser. Do not modify for frontend work.
-  routes/           scaffolded, empty
-  services/         scaffolded, empty
-  types/            shared type definitions
+    parse-wikitext.ts MediaWiki parser. Out of scope for UI work.
+  routes/game.ts      URL shapes, mounted at /api/game
+  scripts/            ingest, audit, setup
+  services/
+    game.ts           The drill: pure comparison + in-memory games
+    roster.ts         The shared list-shaped character projection
+  types/              shared type definitions
 web/
   public/
   src/
-    api/            Fetch client. Components never call fetch directly.
-    components/
+    api/              All network access. Components never call fetch directly.
+    components/       ~25 components (archive UI + drill), main.tsx routes
+    lib/format.ts     Display-time formatting helpers
+    lib/game.ts       Verdict-to-tile mapping, roster autocomplete
+    index.css         Tailwind v4 @theme block - design tokens live here
     main.tsx
-
-Empty directories are held by .gitkeep. Delete the .gitkeep when you add a
-real file to one.
 ```
+
+Empty directories are held by `.gitkeep`. Delete the `.gitkeep` when you add a
+real file.
 
 ### The one hard rule
 
 `web/` runs in the browser. It must **never** import from `server/db`,
-`server/lib`, or anything using `pg` / `drizzle-orm`. Those are Node-only; Vite
-will fail to bundle them, and it would leak the database credentials.
-
-The single exception is `server/types/`, which holds type-only declarations
-and may be imported from `web/` using `import type`. Everything else in
-`server/` is off limits to the browser.
+`server/lib`, or anything using `pg` / `drizzle-orm`. Those are Node-only, and
+it would leak database credentials into the bundle.
 
 All data reaches the frontend through `fetch("/api/...")`.
 
@@ -51,224 +56,213 @@ All data reaches the frontend through `fetch("/api/...")`.
 
 Run from the repo root.
 
-| Command             | What it does                                |
-| ------------------- | ------------------------------------------- |
-| `npm run dev`       | Vite dev server (frontend)                  |
-| `npm run api`       | Express API on :3001                        |
-| `npm run db:studio` | Browse the database                         |
-| `npm run db:push`   | Apply schema changes to Postgres            |
+| Command | What it does |
+| --- | --- |
+| `npm run start` | Frontend + API together (concurrently) |
+| `npm run dev` | Vite dev server only |
+| `npm run api` | Express API on :3001 only |
+| `npm run lint` | oxlint - must pass |
+| `npm run build` | `tsc -b && vite build` - must pass |
+| `npm run db:studio` | Browse the database |
+| `npm run db:push` | Apply schema changes to Postgres |
 | `npm run db:scrape` | Re-scrape the wiki (~10 min, rarely needed) |
-| `npm run setup`     | Full setup for a fresh clone                |
-
-Frontend work needs `npm run dev` and `npm run api` running together. Vite
-proxies `/api` to port 3001 (configured in `web/vite.config.ts`).
 
 ---
 
 ## The data
 
-~189 characters. Roughly 140 have a height, most have an image, a handful have
-neither.
+189 characters. Verified counts, not estimates:
+
+- `status` is **never null**: 117 Deceased, 52 Alive, 20 Unknown
+- `heightCm` exists on **112** records
+- Every other field can be null
 
 ### `GET /api/characters`
-
-Returns an array, alphabetical by name:
 
 ```ts
 type Character = {
   id: number;
-  name: string; // "Eren Yeager"
-  imageUrl: string | null; // Fandom CDN URL
-  status: "Alive" | "Deceased" | "Unknown" | null;
-  species: string[] | null; // ["Human", "Intelligent Titan"]
+  name: string;
+  aliases: string[] | null;   // only 33 records carry any
+  imageUrl: string | null;
+  status: "Alive" | "Deceased" | "Unknown";
+  species: string[] | null;
   gender: string | null;
-  heightCm: number | null; // human form only, 145-190 typical
-  affiliations: string[] | null; // current, e.g. ["Yeagerists"]
+  heightCm: number | null;
+  affiliations: string[] | null;
   formerAffiliations: string[] | null;
   occupation: string | null;
   isTitanShifter: boolean;
-  titanForms: string[] | null; // ["Attack Titan", "Founding Titan"]
+  titanForms: string[] | null;
   debutEpisode: string | null;
   voiceActorJp: string | null;
 };
 ```
 
-### `GET /api/characters/:id`
-
-Same fields plus `kanji`, `romaji`, `aliases`, `birthday`, `birthplace`,
+`GET /api/characters/:id` adds `kanji`, `romaji`, `birthday`, `birthplace`,
 `residence`, `rank`, `formerRank`, `gradRank`, `titanKillsTotal`,
 `debutChapter`, `weightKg`, `wikiTitle`.
 
-Ignore `rawInfobox` — it's a debugging escape hatch, not display data.
+The column list for the list shape lives once in `server/services/roster.ts`
+and is used by both the archive endpoint and the drill.
 
-### Data realities to design around
+Ignore `rawInfobox` - it is a debugging escape hatch, not display data.
 
-- **Nulls are common.** Minor characters have a name and little else. Every
-  field except `id` and `name` can be missing. Design the card and detail view
-  so a sparse character still looks deliberate, not broken.
-- **A lot of characters are obscure.** `11th Commander`, `Alma`, `Anka`. The
-  interface should make the recognizable ones findable rather than presenting
-  all 189 as equally important.
-- **`heightCm` is human height only.** Titan forms are 4-60m and deliberately
-  excluded. Do not mix them into a height comparison.
-- **Images are hotlinked from Fandom.** Some will 404. Always handle image
-  load failure with a styled fallback, never a broken-image icon.
+### Known data issue: portrait URLs
 
-### Where types live
+Every scraped `imageUrl` carries a `/revision/latest?cb=...` suffix that Fandom
+no longer serves. All 189 return 404 in that form; the bare URL returns 200.
 
-`server/types/character.ts` is the single definition of `Character` and is
-shared by both sides. The frontend imports it as a **type-only** import:
+**Fandom answers those 404s with a decodable 300x171 JPEG**, so the browser
+fires `load`, not `error`. An `onError` handler alone can never catch this.
 
-```ts
-import type { Character } from "../../../server/types/character";
-```
+`web/src/lib/format.ts` already strips the suffix and detects the placeholder
+by its intrinsic size. **Reuse those helpers. Do not reimplement image handling
+and do not add a bare `<img src={character.imageUrl}>` anywhere.**
 
-That file must contain only `type` and `interface` declarations — no imports
-from Drizzle, no runtime values. `import type` is erased at compile time, so
-nothing reaches the browser bundle. Adding a runtime export to it would break
-that and pull server code into the client.
-
-The type must match `server/db/schema.ts`. Check the schema, don't guess.
-Do not create a second copy of `Character` in `web/`.
+This is patched at display time only. `npm run db:scrape` will store the dead
+form again. The durable fix belongs in the scraper and is out of scope.
 
 ---
 
-## Design direction
+## Design system
 
-**Concept: the Survey Corps archive.** This is a military records system, not a
-fan page. Utilitarian, data-forward, restrained. The tone comes from the
-material — service records, expedition logs, casualty lists — not from anime
-imagery.
+Concept: **the Survey Corps archive**. Military records, utilitarian, restrained.
+Not a fan page. The tone comes from the material - service records, expedition
+logs, casualty lists.
 
-Two things about this dataset should drive the design:
-
-1. **Scale is the franchise's central obsession.** Titans are classified in
-   meters, the Walls are 50m. You have real height data on ~140 characters.
-2. **`status` is not a neutral field.** In this series, alive versus deceased
-   carries the emotional weight. Let the design acknowledge that without
-   melodrama.
-
-### Signature element
-
-Build **one** memorable thing and keep everything else quiet around it. The
-strongest candidate is a **height comparison**: select characters and see them
-on a shared ruler, marked in centimeters. It is the most characteristic idea in
-the subject's world, it runs on data you already have, and no other character
-database does it.
-
-If you find a better idea grounded in the actual data, take it — but justify it
-against this one, and commit to a single signature rather than several.
-
-### Palette
-
-Starting point, not a mandate. Deviate if you can justify it, but stay away
-from warm cream backgrounds with terracotta accents, and from near-black with a
-single neon accent. Both are generic AI-design defaults and neither says
-anything about this subject.
+Tokens are defined once in `web/src/index.css` as a Tailwind v4 `@theme` block.
+Reference them. Never hardcode a hex value in a component.
 
 ```
---iron        #1C1F22   base, cold and heavy
---slate       #2A2E33   raised surfaces
---bone        #DED9CE   primary text, aged paper
---brass       #A8873E   accent, oxidized fittings
---oxblood     #6E2226   deceased status, alerts
---verdigris   #4A7A6F   titan shifters, secondary data
+iron        base, cold and heavy
+slate       raised surfaces
+bone        primary text, aged paper
+brass       accent, focus rings
+oxblood     Deceased status
+verdigris   titan shifters, secondary data
 ```
 
-Cold and metallic, not warm and cosy. Reserve `oxblood` and `verdigris` for
-data meaning — status and shifter — so color carries information rather than
-decorating.
+### Established conventions - follow these, do not reinvent
 
-### Typography
-
-Pair a **condensed** face for headings and labels with a neutral body face, and
-use a **monospace for all numeric data** — heights, episode numbers, kill
-counts. Monospaced figures reinforce the records-system concept and make the
-height comparison legible.
-
-IBM Plex Sans Condensed / IBM Plex Sans / IBM Plex Mono is a coherent starting
-set. Choose differently if you have a stronger idea, but avoid a high-contrast
-serif display face — it pulls toward the editorial-magazine default.
-
-Set a deliberate type scale. Labels should be small, uppercase, letterspaced,
-in the condensed face — the vernacular of a form field on a service record.
-
-### Structure
-
-Structural devices must encode something true. Do not number things that are
-not a sequence. Status, affiliation, and shifter state are real categories worth
-expressing visually; decorative dividers and eyebrow labels that say nothing are
-not.
-
-### Motion
-
-Restrained. One orchestrated moment beats scattered effects. The height
-comparison animating as characters are added is worth doing well; hover
-transforms on every card are not. Respect `prefers-reduced-motion`.
-
-### Do not
-
-- Recreate the official Survey Corps emblem or the series logo. Original
-  geometry inspired by the aesthetic only.
-- Use anime screenshots as background imagery. Character portraits from the API
-  are the only images.
-- Add a "battle" or "power level" framing. This is an archive, not a game — the
-  guessing game comes later and lives on its own route.
+- `status` is never null, so **Deceased is the marked state and Alive is left
+  unstyled.** That is what keeps oxblood meaningful. Do not add a green
+  "alive" treatment.
+- Sparse records **omit empty field groups entirely** rather than padding with
+  dashes.
+- Null-image records show an initials-on-hatch plate.
+- Affiliation matching considers **current or former**. Filtering "Survey
+  Corps" must still match Eren, who left.
+- Numeric data uses the monospace face.
+- Focus rings are brass and must stay visible on every interactive control.
+- Motion is restrained and respects `prefers-reduced-motion`.
 
 ---
 
-## What to build first
+## What already exists
 
-A single-page character browser at `/`:
+The archive at `/`: character grid, name search, filters for status, shifter,
+and affiliation, a detail panel, and a zero-based height ruler with a median
+reference line. Default sort is record completeness, which floats recognizable
+characters up without a hardcoded popularity list.
 
-- **Grid of character cards** — portrait, name, status, primary affiliation.
-  Cards must degrade gracefully when fields are null.
-- **Search** by name, filtering as you type.
-- **Filters** for status, titan shifter, and affiliation. Affiliation values
-  come from the data, not a hardcoded list — derive them from the response.
-- **Detail view** — panel or modal — showing the full record from
-  `/api/characters/:id`.
-- **The height comparison**, as the signature element.
-- **Real loading, empty, and error states.** "No characters match these
-  filters" with a way to clear them; a genuine error message if the API is
-  down, not a silent empty grid.
+Do not refactor it as part of game work.
 
-### Quality floor
+---
 
-Assume these rather than announcing them: responsive to mobile, visible
-keyboard focus, images lazy-loaded, `alt` text on every portrait, filters
-operable by keyboard.
+## The drill
 
-189 records is small enough to fetch once and filter client-side. Do not build
-pagination or server-side search.
+The guessing game at `/play`. A record is drawn from all 189; the player names
+it in **8 guesses**, and each guess comes back as a row of attribute verdicts.
+
+`react-router-dom` carries the two routes. `SiteHeader` is the strip they
+share; the archive's own masthead still belongs to `/`.
+
+### Server-authoritative
+
+The answer never reaches the client before the game ends. Comparison runs on
+the server, and `toGameState` in `server/services/game.ts` is the only place
+that decides whether `answer` may be sent — one line to audit.
+
+```
+POST /api/game              -> { gameId, maxGuesses, totalCharacters }
+POST /api/game/:id/guess    -> body { characterId }, returns GameState
+GET  /api/game/:id          -> current GameState, for page refresh
+```
+
+Games live in an in-memory `Map`, so restarting `npm run api` drops them. The
+client keeps its `gameId` in sessionStorage; a forgotten id 404s and opens a
+fresh game in its place. A Postgres table is the later upgrade.
+
+`compareCharacters(guess, answer)` is pure — two rows in, verdicts out, no
+HTTP and no database.
+
+### The compared attributes
+
+Chosen against measured coverage of the 189 records:
+
+| Attribute | Coverage | |
+| --- | --- | --- |
+| `status` | 189 | never null |
+| `gender` | 188 | |
+| `isTitanShifter` | 189 | boolean, never null |
+| `affiliations` | 153 | partial on any overlap, current **or** former |
+| `heightCm` | 112 | `unknown` whenever either side is null |
+
+**`species` was dropped.** Coverage is complete, but 176 of 189 are `Human`
+and the rest nearly duplicate `isTitanShifter` — it read "exact" on almost
+every guess. `debutEpisode` (181) is well covered and is the obvious candidate
+if the board ever wants a sixth column.
+
+### Interface rules
+
+- **Colour never carries a verdict alone.** Every tile spells out `Match`,
+  `Partial`, `Miss` or `No record`; height adds a direction word and arrow.
+  `exact` is verdigris, `partial` brass, `none` slate.
+- **Oxblood stays out of the tile grid.** Inside a tile, colour means how close
+  the guess was — a "Deceased ✓" tile is a match, not a casualty. Portraits in
+  a guess row keep the archive's muted-when-deceased treatment.
+- A grid cannot omit columns the way a sparse record omits field groups, so
+  absent data renders as `No record`, distinct from a miss.
+- Newest guess at the top. Autocomplete matches names and aliases, excludes
+  what has already been guessed, and is fully keyboard-operable.
+- The end state reveals the answer inline, not in a modal — the board stays
+  readable beside it.
+
+### Deliberately not built
+
+No daily-puzzle mode, no streaks, no share-to-clipboard grid, no hints.
 
 ---
 
 ## Conventions
 
-- TypeScript throughout, no `any` in `web/`.
-- Tailwind for styling. **Check `package.json` for the version first** — v4
-  configures through CSS, v3 through `tailwind.config.js`. Do not assume.
-- Define design tokens once (CSS custom properties or Tailwind theme config)
-  and reference them. No hardcoded hex values scattered through components.
+- TypeScript throughout. No `any` in `web/`.
+- **Arrow functions only.** `export const Foo = () => { ... }`, never the
+  `function` keyword. Components, handlers, helpers, all of it.
+- **No dynamic `import()`.** Static imports only, everywhere.
+- **Tailwind v4.** Tokens live in the `@theme` block in `web/src/index.css`,
+  configured through CSS, not a `tailwind.config.js`.
 - Components in `web/src/components/`, one per file.
-- All network calls in `web/src/api/`. Components receive data as props or
-  through a hook, never `fetch` inline.
-- `oxlint` is the linter — `npm run lint` must pass.
-- The empty server/ directories are deliberate scaffolding for later. Do not
-  refactor server/api/index.ts into them as part of frontend work — the API
-  is working and out of scope.
-- Use arrow function expressions, not the `function` keyword. Enforced by
-  `func-style` in `.oxlintrc.json` — `npm run lint` will fail otherwise.
+- All network calls in `web/src/api/`.
+- Server code splits into `routes/` (URL shapes), `controllers/` (request and
+  response), `services/` (logic, no HTTP knowledge).
+- The API is served through Vite's proxy at `/api`. It is plain **http**, not
+  https.
 
 ---
 
 ## Before you consider it done
 
-- `npm run lint` passes and `npm run build` succeeds.
-- Works with `npm run api` running; fails informatively when it isn't.
-- A character with only a name and no other data renders without looking broken.
-- A character with a dead `imageUrl` shows the fallback.
-- Keyboard-only navigation reaches every control.
-- Nothing in `web/` imports from `server/db` or `server/lib`, and any import
-  from `server/types` uses `import type`.
+- `npm run lint` and `npm run build` both pass.
+- The answer is not present in any network response until the game ends. Verify
+  in the network tab, not by reading the code.
+- A character with a null height renders `"unknown"`, distinct from a miss.
+- A character with no image shows the initials plate.
+- Every tile is readable without colour.
+- Autocomplete is fully keyboard-operable.
+- 375px viewport has no horizontal overflow.
+- Killing the API produces a real error message, not a silent empty state.
+  Note that the proxy turns a dead API into a 502, not a network failure.
+- Nothing in `web/` imports from `server/db` or `server/lib`.
+- The archive at `/` still works exactly as before.

@@ -8,39 +8,21 @@
  */
 
 import express from "express";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { characters } from "../db/schema";
+import { gameRouter } from "../routes/game";
+import { listCharacters } from "../services/roster";
 
 const app = express();
 const PORT = 3001;
 
-/** All characters, alphabetical. */
+app.use(express.json());
+
+/** All characters, alphabetical. The column list lives in services/roster.ts. */
 app.get("/api/characters", async (_req, res) => {
   try {
-    const rows = await db
-      .select({
-        // Explicit column list: rawInfobox is large and the client never
-        // needs it, so keep it out of the payload.
-        id: characters.id,
-        name: characters.name,
-        imageUrl: characters.imageUrl,
-        status: characters.status,
-        species: characters.species,
-        gender: characters.gender,
-        heightCm: characters.heightCm,
-        affiliations: characters.affiliations,
-        formerAffiliations: characters.formerAffiliations,
-        occupation: characters.occupation,
-        isTitanShifter: characters.isTitanShifter,
-        titanForms: characters.titanForms,
-        debutEpisode: characters.debutEpisode,
-        voiceActorJp: characters.voiceActorJp,
-      })
-      .from(characters)
-      .orderBy(asc(characters.name));
-
-    res.json(rows);
+    res.json(await listCharacters());
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "failed to load characters" });
@@ -68,6 +50,8 @@ app.get("/api/characters/:id", async (req, res) => {
     res.status(500).json({ error: "failed to load character" });
   }
 });
+
+app.use("/api/game", gameRouter);
 
 app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`);

@@ -25,7 +25,20 @@
       "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed $p\" } else { \"nothing listening\" })",
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
       "Bash(curl -s -o /dev/null -w \"vite %{http_code}\\\\n\" -m 3 http://localhost:5173/)",
-      "Bash(curl -s -o /dev/null -w \"api  %{http_code}\\\\n\" -m 3 http://localhost:3001/api/characters)"
+      "Bash(curl -s -o /dev/null -w \"api  %{http_code}\\\\n\" -m 3 http://localhost:3001/api/characters)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['react-router-dom']\\)\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/game)",
+      "Bash(npx vite *)",
+      "Bash(netstat -ano)",
+      "PowerShell(Stop-Process *)",
+      "Bash(cp /tmp/drill-section.md __TRACKED_VAR__/drill-section.md)",
+      "Bash(git fetch *)",
+      "Bash(git switch *)",
+      "Bash(git add *)",
+      "Bash(git rebase *)",
+      "Bash(git commit *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\); console.log\\('valid json'\\)\")",
+      "Bash(git -c core.editor=true rebase --continue)"
     ]
   }
 }

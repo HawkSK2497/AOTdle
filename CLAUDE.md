@@ -108,20 +108,24 @@ and is used by both the archive endpoint and the drill.
 
 Ignore `rawInfobox` - it is a debugging escape hatch, not display data.
 
-### Known data issue: portrait URLs
+### Portrait URLs
 
-Every scraped `imageUrl` carries a `/revision/latest?cb=...` suffix that Fandom
-no longer serves. All 189 return 404 in that form; the bare URL returns 200.
+The stored `imageUrl` is fine. Fandom applies **hotlink protection** to every
+`/revision/` path: with a cross-origin `Referer` the CDN answers 404 and hands
+back a 300x171 "no image" placeholder. Suppressing the header fixes it, which
+is why `<Portrait>` sets `referrerPolicy="no-referrer"`.
 
-**Fandom answers those 404s with a decodable 300x171 JPEG**, so the browser
-fires `load`, not `error`. An `onError` handler alone can never catch this.
+With the header suppressed the whole `/revision/` vocabulary works, so
+`portraitSrc(url, width)` asks for the size actually needed and
+`portraitSrcSet` offers the 2x file. **`<Portrait>` requires a `width`** — the
+CSS pixel width it is drawn at.
 
-`web/src/lib/format.ts` already strips the suffix and detects the placeholder
-by its intrinsic size. **Reuse those helpers. Do not reimplement image handling
-and do not add a bare `<img src={character.imageUrl}>` anywhere.**
+A genuinely missing file still returns that placeholder with a 404, so the
+browser fires `load`, not `error`, and an `<img>` cannot see the status code.
+Intrinsic size is the only signal; `isNotFoundGraphic` checks it.
 
-This is patched at display time only. `npm run db:scrape` will store the dead
-form again. The durable fix belongs in the scraper and is out of scope.
+**Reuse those helpers. Do not reimplement image handling and do not add a bare
+`<img src={character.imageUrl}>` anywhere.**
 
 ---
 

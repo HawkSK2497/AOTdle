@@ -38,6 +38,7 @@ export const CharacterCard = ({
         <Portrait
           name={character.name}
           src={character.imageUrl}
+          width={320}
           muted={character.status === "Deceased"}
           compact
           className="aspect-3/4 w-full"

@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { initials, isNotFoundGraphic, portraitSrc } from "../lib/format";
+import {
+  initials,
+  isNotFoundGraphic,
+  portraitSrc,
+  portraitSrcSet,
+} from "../lib/format";
 
 interface PortraitProps {
   name: string;
   src: string | null;
+  /** CSS pixels the portrait is drawn at; the 2× file is offered alongside. */
+  width: number;
   /** Deceased portraits are drawn down. The grid is mostly grey; so is the record. */
   muted?: boolean;
   /** Drop the fallback caption where there is no room for it. */
@@ -18,12 +25,13 @@ interface PortraitProps {
 export const Portrait = ({
   name,
   src,
+  width,
   muted = false,
   compact = false,
   className = "",
 }: PortraitProps) => {
   const [failed, setFailed] = useState(false);
-  const href = portraitSrc(src);
+  const href = portraitSrc(src, width);
 
   if (!href || failed) {
     return (
@@ -48,9 +56,12 @@ export const Portrait = ({
   return (
     <img
       src={href}
+      srcSet={portraitSrcSet(src, width)}
       alt={`Portrait of ${name}`}
       loading="lazy"
       decoding="async"
+      /* Without this the CDN's hotlink rule answers 404 for every portrait. */
+      referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
       onLoad={(event) => {
         if (isNotFoundGraphic(event.currentTarget)) setFailed(true);

@@ -27,18 +27,45 @@ export const initials = (name: string): string => {
 };
 
 /**
- * The scrape captured Fandom's `/revision/latest?cb=…` suffix, which the CDN
- * no longer serves — every such URL answers 404. The bare file URL still
- * resolves, so normalise it at the point of display.
+ * Fandom applies hotlink protection to every `/revision/` path: when the
+ * request carries a cross-origin `Referer`, the CDN answers 404 and serves a
+ * 300×171 "no image" placeholder instead of the portrait. The stored URL is
+ * not dead — the same URL returns the full original when no `Referer` is sent,
+ * which is why <Portrait> sets `referrerPolicy="no-referrer"`.
+ *
+ * With the header suppressed the whole `/revision/` vocabulary is available,
+ * so ask for the size actually needed rather than the 970px original.
+ * `scale-to-width-down` never upscales — a smaller original is served as-is.
  */
-export const portraitSrc = (url: string | null): string | null =>
-  url === null ? null : url.replace(/\/revision\/.*$/, "");
+const WIKIA_HOST = "static.wikia.nocookie.net";
+
+export const portraitSrc = (url: string | null, width: number): string | null => {
+  if (url === null) return null;
+  if (!url.includes(WIKIA_HOST)) return url;
+
+  const base = url.replace(/\/revision\/.*$/, "");
+  const cb = /[?&]cb=(\d+)/.exec(url);
+  const query = cb ? `?cb=${cb[1]}` : "";
+
+  return `${base}/revision/latest/scale-to-width-down/${width}${query}`;
+};
+
+/** Lets the browser take the 2× file only on a display that can show it. */
+export const portraitSrcSet = (
+  url: string | null,
+  width: number,
+): string | undefined => {
+  const single = portraitSrc(url, width);
+  const double = portraitSrc(url, width * 2);
+  if (!single || !double) return undefined;
+
+  return `${single} 1x, ${double} 2x`;
+};
 
 /**
- * Fandom answers a genuinely missing file with a decodable 300×171 "no image"
- * graphic *and* a 404 status. The browser therefore fires `load`, not `error`,
- * and an <img> cannot see the status code — the intrinsic size is the only
- * signal available. Anything matching it is treated as a miss.
+ * A genuinely missing file still returns that same 300×171 placeholder with a
+ * 404. The browser therefore fires `load`, not `error`, and an <img> cannot
+ * see the status code — the intrinsic size is the only signal available.
  */
 const NOT_FOUND_WIDTH = 300;
 const NOT_FOUND_HEIGHT = 171;

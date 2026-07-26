@@ -95,6 +95,7 @@ export const HeightRuler = ({ characters, onRemove }: HeightRulerProps) => (
                 <Portrait
                   name={character.name}
                   src={character.imageUrl}
+                  width={96}
                   muted={character.status === "Deceased"}
                   compact
                   className={`h-full w-full ${

@@ -161,6 +161,7 @@ export const DetailPanel = ({
                 <Portrait
                   name={summary.name}
                   src={summary.imageUrl}
+                  width={160}
                   muted={summary.status === "Deceased"}
                   className="aspect-3/4 w-full"
                 />

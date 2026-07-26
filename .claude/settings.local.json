@@ -22,7 +22,10 @@
       "Bash(curl -s -m 5 \"http://localhost:5173/api/characters\" -o /dev/null -w \"proxy status: %{http_code}\\\\n\")",
       "Bash(curl -s -m 5 http://localhost:3001/api/characters -o /dev/null -w \"api: %{http_code} in %{time_total}s\\\\n\")",
       "Bash(curl -s -m 5 http://localhost:5173/api/characters -o /dev/null -w \"proxy: %{http_code}\\\\n\")",
-      "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed $p\" } else { \"nothing listening\" })"
+      "PowerShell($p = \\(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue\\).OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"killed $p\" } else { \"nothing listening\" })",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
+      "Bash(curl -s -o /dev/null -w \"vite %{http_code}\\\\n\" -m 3 http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"api  %{http_code}\\\\n\" -m 3 http://localhost:3001/api/characters)"
     ]
   }
 }

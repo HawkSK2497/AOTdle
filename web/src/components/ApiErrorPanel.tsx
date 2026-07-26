@@ -20,8 +20,8 @@ export const ApiErrorPanel = ({ error, onRetry }: ApiErrorPanelProps) => (
       {error.offline ? (
         <>
           Nothing answered on <span className="datum">localhost:3001</span>.
-          Start the API with <span className="datum">npm run api</span> and try
-          again.
+          Start the API with <span className="datum">npm run server</span> and
+          try again.
         </>
       ) : (
         <>

@@ -44,7 +44,7 @@ const confirm = async (question: string): Promise<boolean> => {
 const printNextSteps = () => {
   console.log(bold("\nSetup complete.\n"));
   console.log("  npm run dev        start the frontend");
-  console.log("  npm run api        start the API server");
+  console.log("  npm run server     start the API server");
   console.log("  npm run db:studio  browse the database");
   console.log("");
 };

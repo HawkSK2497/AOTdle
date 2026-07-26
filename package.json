@@ -15,7 +15,7 @@
     "db:scrape:trial": "tsx server/scripts/ingest.ts --limit 10",
     "db:audit": "tsx server/scripts/audit.ts",
     "setup": "tsx server/scripts/setup.ts",
-    "start": "concurrently -n web,api -c cyan,magenta \"npm run dev\" \"npm run api\"",
+    "start": "concurrently -n web,api -c cyan,magenta \"npm run dev\" \"npm run server\"",
     "db:reset": "tsx server/scripts/reset-db.ts"
   },
   "dependencies": {

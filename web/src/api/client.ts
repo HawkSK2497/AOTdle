@@ -17,7 +17,7 @@ import type { GameState, NewGame } from "../../../server/types/game";
  */
 export class ApiError extends Error {
   readonly status: number;
-  /** True when the API could not be reached at all — usually `npm run api`. */
+  /** True when the API could not be reached at all — usually `npm run server`. */
   readonly offline: boolean;
   /**
    * The API's own explanation, when it sent one. The drill rejects guesses

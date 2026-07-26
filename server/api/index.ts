@@ -1,7 +1,7 @@
 /**
  * Minimal API between Postgres and the React app.
  *
- *   npm run api
+ *   npm run server
  *
  * The browser cannot talk to Postgres directly, so this process holds the
  * database connection and exposes plain JSON over HTTP.

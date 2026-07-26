@@ -38,7 +38,11 @@
       "Bash(git rebase *)",
       "Bash(git commit *)",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\); console.log\\('valid json'\\)\")",
-      "Bash(git -c core.editor=true rebase --continue)"
+      "Bash(git -c core.editor=true rebase --continue)",
+      "PowerShell($p = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue; if \\($p\\) { Stop-Process -Id \\($p.OwningProcess | Select-Object -First 1\\) -Force }; $v = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue; if \\($v\\) { Stop-Process -Id \\($v.OwningProcess | Select-Object -First 1\\) -Force }; Start-Sleep -Milliseconds 600; \"ports cleared\")",
+      "Bash(curl -s -o /dev/null -w \"api    %{http_code}\\\\n\" -m 5 http://localhost:3001/api/characters)",
+      "Bash(curl -s -o /dev/null -w \"vite   %{http_code}\\\\n\" -m 5 http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"proxy  %{http_code}\\\\n\" -m 5 http://localhost:5173/api/characters)"
     ]
   }
 }

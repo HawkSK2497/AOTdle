@@ -60,7 +60,7 @@ Run from the repo root.
 | --- | --- |
 | `npm run start` | Frontend + API together (concurrently) |
 | `npm run dev` | Vite dev server only |
-| `npm run api` | Express API on :3001 only |
+| `npm run server` | Express API on :3001 only |
 | `npm run lint` | oxlint - must pass |
 | `npm run build` | `tsc -b && vite build` - must pass |
 | `npm run db:studio` | Browse the database |
@@ -194,7 +194,7 @@ POST /api/game/:id/guess    -> body { characterId }, returns GameState
 GET  /api/game/:id          -> current GameState, for page refresh
 ```
 
-Games live in an in-memory `Map`, so restarting `npm run api` drops them. The
+Games live in an in-memory `Map`, so restarting `npm run server` drops them. The
 client keeps its `gameId` in sessionStorage; a forgotten id 404s and opens a
 fresh game in its place. A Postgres table is the later upgrade.
 

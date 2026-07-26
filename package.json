@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "api": "tsx watch server/api/index.ts",
+    "server": "tsx watch server/api/index.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:scrape": "tsx server/scripts/ingest.ts",
@@ -16,7 +16,7 @@
     "db:audit": "tsx server/scripts/audit.ts",
     "setup": "tsx server/scripts/setup.ts",
     "start": "concurrently -n web,api -c cyan,magenta \"npm run dev\" \"npm run api\"",
-    "reset": "tsx server/scripts/reset-db.ts"
+    "db:reset": "tsx server/scripts/reset-db.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
